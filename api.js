@@ -59,9 +59,9 @@ api.post("/api/users/login", (req, res) => {
           const token = jwt.sign({ usuario: user }, SEED, {
             expiresIn: "30d"
           })
-          Author.findOne({ authorName: result.usuario.authorName }, (err, user) => {
+          Author.findOne({ authorName: result.author }, (err, user) => {
             if (err) res.status(500).send({ message: "user not found" })
-            if (data)
+            if (user)
               res
                 .status(200)
                 .send({ message: "user data found", authorData: user, token: token })
@@ -92,6 +92,7 @@ api.post("/api/new-recipe", (req, res) => {
     steps,
     frontImage
   } = req.body.newRecipe
+  //en un futuro quitar esto ya que la comprobacion sera desde el cliente
   if (author && recipeName && steps) {
     Recipe.create(req.body.newRecipe, (err, savedRecipe) => {
       if (err)
@@ -100,17 +101,21 @@ api.post("/api/new-recipe", (req, res) => {
           data: err
         })
       else {
-        const { userData } = req.body
-        Author.findOneAndUpdate(
-          { author: req.body.newRecipe.author },
-          { userData },
-          { new: true },
-          (err, authorData) => {
-            if (err) res.status(500).send({ message: "author data not found" })
-            if (authorData)
-              res
-                .status(201)
-                .send({ message: "author recipes updated", data: authorData })
+        Author.findByIdAndUpdate(
+          req.body.userData._id,
+          req.body.userData,
+          { new: true, useFindAndModify: false },
+          (err, authorUpdated) => {
+            if (err)
+              res.status(400).send({
+                success: false,
+                data: err
+              })
+            if (authorUpdated)
+              res.status(201).send({
+                success: true,
+                data: authorUpdated
+              })
           }
         )
       }
