@@ -10,7 +10,7 @@ const Login = require("./models/Login.js")
 const api = appInit()
 
 const SEED = "MY_SEED_auth_rules!"
-const PORT = 3001
+// const PORT = 3000
 // MIDDLEWARE
 api.all("*", function (req, res, next) {
   log.log(req, "api")
@@ -133,10 +133,7 @@ api.post("/api/new-recipe", (req, res) => {
     // )
   } else res.status(400).send("we need more data")
 })
-api.post("/api/test", (req, res) => {
-  Login.findOne({ author: req.body.author, email: req.body.email }, (err, data) => {
-    console.log(err, data)
-  })
-})
 
-api.listen(PORT, () => console.log(`Api is running in localhost:${PORT}`))
+api.listen(api.get("port"), () =>
+  console.log(`Api is running in localhost:${api.get("port")}`)
+)
