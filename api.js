@@ -134,6 +134,6 @@ api.post("/api/new-recipe", (req, res) => {
   } else res.status(400).send("we need more data")
 })
 
-api.listen(api.get("port"), () =>
+api.listen(process.env.PORT, () =>
   console.log(`Api is running in localhost:${api.get("port")}`)
 )
