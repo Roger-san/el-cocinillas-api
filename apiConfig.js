@@ -7,6 +7,7 @@ const URLDB =
 
 const appInit = () => {
   const api = express()
+  api.set("port", process.env.PORT || 3000)
   api.use(bodyParser.json())
   api.use(bodyParser.urlencoded({ extended: true }))
   api.use((req, res, next) => {

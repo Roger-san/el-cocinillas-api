@@ -59,7 +59,7 @@ api.post("/api/users/login", (req, res) => {
           const token = jwt.sign({ usuario: user }, SEED, {
             expiresIn: "30d"
           })
-          Author.findOne({ authorName: data.usuario.authorName }, (err, user) => {
+          Author.findOne({ authorName: result.usuario.authorName }, (err, user) => {
             if (err) res.status(500).send({ message: "user not found" })
             if (data)
               res
@@ -134,6 +134,6 @@ api.post("/api/new-recipe", (req, res) => {
   } else res.status(400).send("we need more data")
 })
 
-api.listen(process.env.PORT, () =>
+api.listen(api.get("port"), () =>
   console.log(`Api is running in localhost:${api.get("port")}`)
 )
