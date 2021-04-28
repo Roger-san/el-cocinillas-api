@@ -18,7 +18,14 @@ api.all("*", function (req, res, next) {
 })
 
 // GET
+
 // POST
+api.post("/api/recipes", (req, res) => {
+  Recipe.find({}, null, { skip: req.body.skip, limit: 12 }, (err, data) => {
+    if (err) return res.status(500).send({ message: "something went wrong" })
+    if (data) return res.status(200).send({ message: "success", data: data })
+  })
+})
 api.post("/api/users/register", (req, res) => {
   Login.findOne({ author: req.body.author, email: req.body.email }, (err, user) => {
     if (err) return res.status(500).send({ message: "login fail" })
@@ -83,7 +90,7 @@ api.post("/api/users/token", (req, res) => {
     }
   })
 })
-api.post("/api/new-recipe", (req, res) => {
+api.post("/api/users/new-recipe", (req, res) => {
   const {
     author,
     recipeName,
