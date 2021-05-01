@@ -18,8 +18,13 @@ api.all("*", function (req, res, next) {
 })
 
 // GET
-
 // POST
+api.post("/api/users/authorRecipes", (req, res) => {
+  Author.findOne({ author: req.body.author }, (err, data) => {
+    if (err) return res.status(500).send({ message: "something went wrong" })
+    if (data) return res.status(200).send({ message: "success", data: [...data.recipes] })
+  })
+})
 api.post("/api/recipes", (req, res) => {
   Recipe.find({}, null, { skip: req.body.skip, limit: 12 }, (err, data) => {
     if (err) return res.status(500).send({ message: "something went wrong" })
