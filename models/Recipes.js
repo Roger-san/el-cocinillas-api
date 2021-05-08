@@ -12,8 +12,6 @@ const recipeSchema = new Schema(
     frontImage: String
   },
   { versionKey: false }
-  // versionKey: false elimina la creacion de un parametro
-  // adicional que es inecesario
 )
 
-module.exports = mongoose.model("Recipe", recipeSchema)
+module.exports = mongoose.model("Recipes", recipeSchema)
