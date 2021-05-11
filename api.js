@@ -1,6 +1,8 @@
 const { appInit } = require("./apiConfig.js")
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
+const { IncomingForm } = require("formidable")
+const fs = require("fs")
 
 const log = require("./log/log.js")
 const Authors = require("./models/Authors.js")
@@ -16,8 +18,14 @@ api.all("*", function (req, res, next) {
   log.log(req, "api")
   next()
 })
-
 // GET
+api.get("/api/recipe/image/:name", (req, res) => {
+  console.log(req.params.name)
+  fs.readFile("img/" + req.params.name, (err, data) => {
+    if (err) res.status(500).send({ success: false, message: err })
+    if (data) res.status(200).send({ success: true, data: data })
+  })
+})
 // POST
 api.post("/api/users/authorRecipes", (req, res) => {
   Authors.findOne({ author: req.body.author }, (err, data) => {
@@ -28,12 +36,16 @@ api.post("/api/users/authorRecipes", (req, res) => {
 api.post("/api/recipes", (req, res) => {
   Recipes.find({}, (err, data) => {
     if (err) return res.status(500).send({ message: "something went wrong" })
-    if (data)
+    if (data) {
+      const pagesLength = data.length
+      console.log(req.body.skip)
+      const recipes = [...data].reverse()
       return res.status(200).send({
         message: "success",
-        data: data.reverse().splice(req.body.skip, 12),
-        pagesLength: data.length
+        pagesLength: pagesLength,
+        data: recipes.splice(Number(req.body.skip), 12)
       })
+    }
   })
 })
 api.post("/api/users/register", (req, res) => {
@@ -52,12 +64,10 @@ api.post("/api/users/register", (req, res) => {
         const newUser = { author: author, email: email, password: hashedPassword }
         Login.create(newUser, (err, data) => {
           if (err)
-            return res
-              .status(500)
-              .send({
-                message: "System failure: database user creation fail",
-                success: false
-              })
+            return res.status(500).send({
+              message: "System failure: database user creation fail",
+              success: false
+            })
           if (data) {
             const token = jwt.sign({ usuario: data }, SEED, {
               expiresIn: "30d"
@@ -68,14 +78,12 @@ api.post("/api/users/register", (req, res) => {
                   .status(500)
                   .send({ message: "System failure: user not saved", success: false })
               if (data) {
-                return res
-                  .status(201)
-                  .send({
-                    message: "user created",
-                    token: token,
-                    authorData: data,
-                    success: true
-                  })
+                return res.status(201).send({
+                  message: "user created",
+                  token: token,
+                  authorData: data,
+                  success: true
+                })
               }
             })
           }
@@ -130,39 +138,44 @@ api.post("/api/users/token", (req, res) => {
     }
   })
 })
-api.post("/api/users/new-recipe", (req, res) => {
-  const { author, recipeName, steps } = req.body.newRecipe
-  //en un futuro quitar esto ya que la comprobacion sera desde el cliente
-  if (author && recipeName && steps) {
-    Recipes.create(req.body.newRecipe, (err, savedRecipe) => {
-      if (err)
-        res.status(400).send({
-          success: false,
-          data: err
-        })
-      else {
-        Authors.findByIdAndUpdate(
-          req.body.userData._id,
-          req.body.userData,
-          { new: true, useFindAndModify: false },
-          (err, authorUpdated) => {
-            if (err)
-              res.status(400).send({
-                success: false,
-                data: err
-              })
-            if (authorUpdated)
-              res.status(201).send({
-                success: true,
-                data: authorUpdated
-              })
-          }
-        )
-      }
-    })
-  } else res.status(400).send({ success: false })
+api.post("/api/recipe/new-recipe", (req, res) => {
+  console.log(req.body)
+  Recipes.create(req.body.newRecipe, (err, savedRecipe) => {
+    if (err)
+      res.status(400).send({
+        success: false,
+        message: err
+      })
+    else {
+      Authors.findByIdAndUpdate(
+        req.body.userData._id,
+        req.body.userData,
+        { new: true, useFindAndModify: false },
+        (err, authorUpdated) => {
+          if (err)
+            res.status(400).send({
+              success: false,
+              data: err
+            })
+          if (authorUpdated)
+            res.status(201).send({
+              success: true,
+              data: authorUpdated
+            })
+        }
+      )
+    }
+  })
 })
-
+api.post("/api/recipe/new-picture", (req, res) => {
+  const form = new IncomingForm()
+  form.parse(req, (err, fields, files) => {
+    if (err) res.status(500).send({ success: false, message: err })
+  })
+  form.on("fileBegin", (name, file) => {
+    file.path = __dirname + "/img/" + file.name
+  })
+})
 api.listen(api.get("port"), () =>
   console.log(`Api is running in localhost:${api.get("port")}`)
 )

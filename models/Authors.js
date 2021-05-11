@@ -5,9 +5,7 @@ const Schema = mongoose.Schema
 const authorSchema = new Schema(
   {
     author: String,
-    recipes: [Object],
-    config: [Object],
-    data: [Object]
+    recipes: [Object]
   },
   { versionKey: false }
 )

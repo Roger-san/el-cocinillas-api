@@ -9,7 +9,7 @@ const recipeSchema = new Schema(
     description: String,
     ingredients: [Object],
     steps: [Object],
-    frontImage: String
+    frontImage: Object
   },
   { versionKey: false }
 )
