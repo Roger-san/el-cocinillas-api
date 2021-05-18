@@ -8,8 +8,8 @@ const URLDB =
 const appInit = () => {
   const api = express()
   api.set("port", process.env.PORT || 3001)
-  api.use(bodyParser.json())
-  api.use(bodyParser.urlencoded({ extended: true }))
+  api.use(bodyParser.json({ limit: "1mb", extended: true }))
+  api.use(bodyParser.urlencoded({ limit: "2mb", extended: true }))
   api.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*")
     res.header(

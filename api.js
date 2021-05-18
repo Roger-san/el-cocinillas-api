@@ -4,26 +4,52 @@ const jwt = require("jsonwebtoken")
 const { IncomingForm } = require("formidable")
 const fs = require("fs")
 
-const log = require("./log/log.js")
 const Authors = require("./models/Authors.js")
 const Recipes = require("./models/Recipes.js")
 const Login = require("./models/Login.js")
+const Images = require("./models/Images.js")
 
 const api = appInit()
 
 const SEED = "MY_SEED_auth_rules!"
 
-// MIDDLEWARE
-api.all("*", function (req, res, next) {
-  log.log(req, "api")
-  next()
-})
 // GET
 api.get("/api/recipe/image/:name", (req, res) => {
-  console.log(req.params.name)
-  fs.readFile("img/" + req.params.name, (err, data) => {
-    if (err) res.status(500).send({ success: false, message: err })
-    if (data) res.status(200).send({ success: true, data: data })
+  Images.find({ name: req.params.name }, (err, data) => {
+    if (err) return res.status(500).send({ success: false, message: err })
+    if (data) return res.status(200).send({ success: true, data: data })
+  })
+})
+
+api.post("/api/recipes", (req, res) => {
+  Recipes.find({}, (err, data) => {
+    if (err) return res.status(500).send({ message: "something went wrong" })
+    if (data) {
+      const pagesLength = data.length
+      const recipes = [...data].reverse().splice(req.body.skip, 12)
+      return res.status(200).send({
+        message: "success",
+        pagesLength: pagesLength,
+        data: recipes
+      })
+    }
+  })
+})
+
+api.post("/api/users/token", (req, res) => {
+  if (!req.body.token) return res.status(401).send({ succes: false, message: "no token" })
+  jwt.verify(req.body.token, SEED, (err, data) => {
+    if (err)
+      return res.status(500).send({ succes: false, message: "token doesn't match" })
+    else {
+      Authors.findOne({ author: data.usuario.author }, (err, user) => {
+        if (err) return res.status(500).send({ succes: true, message: "user not found" })
+        if (data)
+          return res
+            .status(200)
+            .send({ succes: true, message: "user data found", authorData: user })
+      })
+    }
   })
 })
 // POST
@@ -31,21 +57,6 @@ api.post("/api/users/authorRecipes", (req, res) => {
   Authors.findOne({ author: req.body.author }, (err, data) => {
     if (err) return res.status(500).send({ message: "something went wrong" })
     if (data) return res.status(200).send({ message: "success", data: [...data.recipes] })
-  })
-})
-api.post("/api/recipes", (req, res) => {
-  Recipes.find({}, (err, data) => {
-    if (err) return res.status(500).send({ message: "something went wrong" })
-    if (data) {
-      const pagesLength = data.length
-      console.log(req.body.skip)
-      const recipes = [...data].reverse()
-      return res.status(200).send({
-        message: "success",
-        pagesLength: pagesLength,
-        data: recipes.splice(Number(req.body.skip), 12)
-      })
-    }
   })
 })
 api.post("/api/users/register", (req, res) => {
@@ -109,11 +120,11 @@ api.post("/api/users/login", (req, res) => {
           })
           Authors.findOne({ author: user.author }, (err, user) => {
             if (err)
-              res
+              return res
                 .status(500)
                 .send({ message: "Email or password incorrect", success: false })
             if (user)
-              res.status(200).send({
+              return res.status(200).send({
                 message: "user data found",
                 authorData: user,
                 token: token,
@@ -121,28 +132,17 @@ api.post("/api/users/login", (req, res) => {
               })
           })
         } else
-          res.status(403).send({ message: "Email or password incorrect", success: false })
-      })
-    }
-  })
-})
-api.post("/api/users/token", (req, res) => {
-  if (!req.body.token) return console.log("atrasss")
-  jwt.verify(req.body.token, SEED, (err, data) => {
-    if (err) res.status(500).send({ message: "token doesn't match" })
-    else {
-      Authors.findOne({ author: data.usuario.author }, (err, user) => {
-        if (err) res.status(500).send({ message: "user not found" })
-        if (data) res.status(200).send({ message: "user data found", authorData: user })
+          return res
+            .status(403)
+            .send({ message: "Email or password incorrect", success: false })
       })
     }
   })
 })
 api.post("/api/recipe/new-recipe", (req, res) => {
-  console.log(req.body)
   Recipes.create(req.body.newRecipe, (err, savedRecipe) => {
     if (err)
-      res.status(400).send({
+      return res.status(400).send({
         success: false,
         message: err
       })
@@ -153,12 +153,12 @@ api.post("/api/recipe/new-recipe", (req, res) => {
         { new: true, useFindAndModify: false },
         (err, authorUpdated) => {
           if (err)
-            res.status(400).send({
+            return res.status(400).send({
               success: false,
               data: err
             })
           if (authorUpdated)
-            res.status(201).send({
+            return res.status(201).send({
               success: true,
               data: authorUpdated
             })
@@ -168,12 +168,13 @@ api.post("/api/recipe/new-recipe", (req, res) => {
   })
 })
 api.post("/api/recipe/new-picture", (req, res) => {
-  const form = new IncomingForm()
-  form.parse(req, (err, fields, files) => {
-    if (err) res.status(500).send({ success: false, message: err })
-  })
-  form.on("fileBegin", (name, file) => {
-    file.path = __dirname + "/img/" + file.name
+  Images.create({ data: req.body.data, name: req.body.name }, (err, data) => {
+    if (err)
+      return res
+        .status(500)
+        .send({ success: false, message: "somecing wrent wrong saving the picture" })
+    if (data)
+      return res.status(201).send({ success: true, message: "image saved successfully" })
   })
 })
 api.listen(api.get("port"), () =>
