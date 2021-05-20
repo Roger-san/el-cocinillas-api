@@ -1,8 +1,6 @@
 const { appInit } = require("./apiConfig.js")
 const bcrypt = require("bcrypt")
 const jwt = require("jsonwebtoken")
-const { IncomingForm } = require("formidable")
-const fs = require("fs")
 
 const Authors = require("./models/Authors.js")
 const Recipes = require("./models/Recipes.js")
@@ -20,13 +18,12 @@ api.get("/api/recipe/image/:name", (req, res) => {
     if (data) return res.status(200).send({ success: true, data: data })
   })
 })
-
-api.post("/api/recipes", (req, res) => {
+api.get("/api/recipes/:skip", (req, res) => {
   Recipes.find({}, (err, data) => {
     if (err) return res.status(500).send({ message: "something went wrong" })
     if (data) {
       const pagesLength = data.length
-      const recipes = [...data].reverse().splice(req.body.skip, 12)
+      const recipes = [...data].reverse().splice(Number(req.params.skip), 12)
       return res.status(200).send({
         message: "success",
         pagesLength: pagesLength,
@@ -35,10 +32,10 @@ api.post("/api/recipes", (req, res) => {
     }
   })
 })
-
-api.post("/api/users/token", (req, res) => {
-  if (!req.body.token) return res.status(401).send({ succes: false, message: "no token" })
-  jwt.verify(req.body.token, SEED, (err, data) => {
+api.get("/api/login/token/:data", (req, res) => {
+  if (!req.params.data)
+    return res.status(401).send({ succes: false, message: "no token" })
+  jwt.verify(req.params.data, SEED, (err, data) => {
     if (err)
       return res.status(500).send({ succes: false, message: "token doesn't match" })
     else {
@@ -52,14 +49,14 @@ api.post("/api/users/token", (req, res) => {
     }
   })
 })
-// POST
-api.post("/api/users/authorRecipes", (req, res) => {
-  Authors.findOne({ author: req.body.author }, (err, data) => {
+api.get("/api/user/authorRecipes/:author", (req, res) => {
+  Authors.findOne({ author: req.params.author }, (err, data) => {
     if (err) return res.status(500).send({ message: "something went wrong" })
     if (data) return res.status(200).send({ message: "success", data: [...data.recipes] })
   })
 })
-api.post("/api/users/register", (req, res) => {
+// POST
+api.post("/api/user/register", (req, res) => {
   Login.findOne({ author: req.body.author, email: req.body.email }, (err, user) => {
     if (err)
       return res
@@ -103,7 +100,7 @@ api.post("/api/users/register", (req, res) => {
     }
   })
 })
-api.post("/api/users/login", (req, res) => {
+api.post("/api/login/login", (req, res) => {
   Login.findOne({ email: req.body.email }, (err, user) => {
     if (err) return res.status(500).send({ message: "System failure", success: false })
     if (!user)
@@ -139,7 +136,7 @@ api.post("/api/users/login", (req, res) => {
     }
   })
 })
-api.post("/api/recipe/new-recipe", (req, res) => {
+api.post("/api/create/new-recipe", (req, res) => {
   Recipes.create(req.body.newRecipe, (err, savedRecipe) => {
     if (err)
       return res.status(400).send({
@@ -167,7 +164,7 @@ api.post("/api/recipe/new-recipe", (req, res) => {
     }
   })
 })
-api.post("/api/recipe/new-picture", (req, res) => {
+api.post("/api/create/new-picture", (req, res) => {
   Images.create({ data: req.body.data, name: req.body.name }, (err, data) => {
     if (err)
       return res
