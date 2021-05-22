@@ -13,7 +13,7 @@ const SEED = "MY_SEED_auth_rules!"
 
 // GET
 api.get("/api/recipe/image/:name", (req, res) => {
-  Images.find({ name: req.params.name }, (err, data) => {
+  Images.findOne({ name: req.params.name }, (err, data) => {
     if (err) return res.status(500).send({ success: false, message: err })
     if (data) return res.status(200).send({ success: true, data: data })
   })
