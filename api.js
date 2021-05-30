@@ -20,27 +20,35 @@ api.get("/api/recipe/image/:name", (req, res) => {
 })
 api.get("/api/recipes/:skip", (req, res) => {
   Recipes.find({}, (err, data) => {
-    if (err) return res.status(500).send({ message: "something went wrong" })
+    if (err)
+      return res
+        .status(500)
+        .send({ message: "something went wrong:" + err, success: false })
     if (data) {
-      const pagesLength = data.length
+      const recipesList = data.map((recipe) => recipe.recipeName)
+      const totalRecipes = data.length
       const recipes = [...data].reverse().splice(Number(req.params.skip), 12)
       return res.status(200).send({
-        message: "success",
-        pagesLength: pagesLength,
-        data: recipes
+        success: true,
+        totalRecipes: totalRecipes,
+        recipes: recipes,
+        recipesList: recipesList
       })
     }
   })
 })
 api.get("/api/login/token/:data", (req, res) => {
   if (!req.params.data)
-    return res.status(401).send({ succes: false, message: "no token" })
+    return res.status(401).send({ success: false, message: "no token" })
   jwt.verify(req.params.data, SEED, (err, data) => {
     if (err)
-      return res.status(500).send({ succes: false, message: "token doesn't match" })
+      return res
+        .status(500)
+        .send({ success: false, message: "token doesn't match:" + err })
     else {
       Authors.findOne({ author: data.usuario.author }, (err, user) => {
-        if (err) return res.status(500).send({ succes: true, message: "user not found" })
+        if (err)
+          return res.status(500).send({ success: true, message: "user not found:" + err })
         if (data)
           return res
             .status(200)
@@ -51,8 +59,19 @@ api.get("/api/login/token/:data", (req, res) => {
 })
 api.get("/api/user/authorRecipes/:author", (req, res) => {
   Authors.findOne({ author: req.params.author }, (err, data) => {
-    if (err) return res.status(500).send({ message: "something went wrong" })
-    if (data) return res.status(200).send({ message: "success", data: [...data.recipes] })
+    if (err)
+      return res
+        .status(500)
+        .send({ message: "something went wrong:" + err, success: false })
+    if (data) return res.status(200).send({ success: true, data: [...data.recipes] })
+  })
+})
+api.get("/api/recipe/:recipeName", (req, res) => {
+  Recipes.findOne({ recipeName: req.params.recipeName }, (err, recipe) => {
+    if (err)
+      return res.status(500).send({ message: "something went wrong", success: false })
+    if (recipe === null) return res.status(200).send({ success: false })
+    if (recipe) return res.status(200).send({ success: true, recipe: recipe })
   })
 })
 // POST
@@ -61,7 +80,7 @@ api.post("/api/user/register", (req, res) => {
     if (err)
       return res
         .status(500)
-        .send({ message: "System failure: database login fail", success: false })
+        .send({ message: "System failure: database login fail:" + err, success: false })
     if (user)
       return res
         .status(403)
@@ -73,7 +92,7 @@ api.post("/api/user/register", (req, res) => {
         Login.create(newUser, (err, data) => {
           if (err)
             return res.status(500).send({
-              message: "System failure: database user creation fail",
+              message: "System failure: database user creation fail:" + err,
               success: false
             })
           if (data) {
@@ -82,12 +101,12 @@ api.post("/api/user/register", (req, res) => {
             })
             Authors.create({ author: data.author }, (err, data) => {
               if (err)
-                return res
-                  .status(500)
-                  .send({ message: "System failure: user not saved", success: false })
+                return res.status(500).send({
+                  message: "System failure: user not saved:" + err,
+                  success: false
+                })
               if (data) {
                 return res.status(201).send({
-                  message: "user created",
                   token: token,
                   authorData: data,
                   success: true
@@ -102,7 +121,8 @@ api.post("/api/user/register", (req, res) => {
 })
 api.post("/api/login/login", (req, res) => {
   Login.findOne({ email: req.body.email }, (err, user) => {
-    if (err) return res.status(500).send({ message: "System failure", success: false })
+    if (err)
+      return res.status(500).send({ message: "System failure:" + err, success: false })
     if (!user)
       return res
         .status(403)
@@ -110,7 +130,9 @@ api.post("/api/login/login", (req, res) => {
     if (user) {
       bcrypt.compare(req.body.password, user.password, (err, result) => {
         if (err)
-          return res.status(500).send({ message: "System failure", success: false })
+          return res
+            .status(500)
+            .send({ message: "System failure:" + err, success: false })
         if (result) {
           const token = jwt.sign({ usuario: user }, SEED, {
             expiresIn: "30d"
@@ -119,10 +141,9 @@ api.post("/api/login/login", (req, res) => {
             if (err)
               return res
                 .status(500)
-                .send({ message: "Email or password incorrect", success: false })
+                .send({ message: "Email or password incorrect:" + err, success: false })
             if (user)
               return res.status(200).send({
-                message: "user data found",
                 authorData: user,
                 token: token,
                 success: true
@@ -152,7 +173,7 @@ api.post("/api/create/new-recipe", (req, res) => {
           if (err)
             return res.status(400).send({
               success: false,
-              data: err
+              message: err
             })
           if (authorUpdated)
             return res.status(201).send({
@@ -167,9 +188,10 @@ api.post("/api/create/new-recipe", (req, res) => {
 api.post("/api/create/new-picture", (req, res) => {
   Images.create({ data: req.body.data, name: req.body.name }, (err, data) => {
     if (err)
-      return res
-        .status(500)
-        .send({ success: false, message: "somecing wrent wrong saving the picture" })
+      return res.status(500).send({
+        success: false,
+        message: "somecing wrent wrong saving the picture:" + err
+      })
     if (data)
       return res.status(201).send({ success: true, message: "image saved successfully" })
   })
