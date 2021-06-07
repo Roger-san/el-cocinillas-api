@@ -67,11 +67,13 @@ api.get("/api/user/authorRecipes/:author", (req, res) => {
   })
 })
 api.get("/api/recipe/:recipeName", (req, res) => {
-  Recipes.findOne({ recipeName: req.params.recipeName }, (err, recipe) => {
+  const regEx = new RegExp(`(${req.params.recipeName})`, "gi")
+  Recipes.find({ recipeName: regEx }, (err, recipe) => {
     if (err)
       return res.status(500).send({ message: "something went wrong", success: false })
-    if (recipe === null) return res.status(200).send({ success: false })
-    if (recipe) return res.status(200).send({ success: true, recipe: recipe })
+    if (recipe === null || recipe.length !== 1)
+      return res.status(200).send({ success: false })
+    if (recipe) return res.status(200).send({ success: true, recipe: recipe[0] })
   })
 })
 // POST
